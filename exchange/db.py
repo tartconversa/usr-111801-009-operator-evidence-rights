@@ -6,7 +6,8 @@ PRAGMA foreign_keys=ON;
 CREATE TABLE IF NOT EXISTS sources (
     id TEXT PRIMARY KEY, owner TEXT NOT NULL, jurisdiction TEXT NOT NULL,
     classification TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 1,
-    schema_version INTEGER NOT NULL DEFAULT 1
+    schema_version INTEGER NOT NULL DEFAULT 1,
+    site_id TEXT REFERENCES sites(id)
 );
 CREATE TABLE IF NOT EXISTS fields (
     source_id TEXT NOT NULL REFERENCES sources(id), name TEXT NOT NULL,
@@ -18,10 +19,28 @@ CREATE TABLE IF NOT EXISTS assets (
     schema_version INTEGER NOT NULL, payload TEXT NOT NULL, digest TEXT NOT NULL,
     received_at TEXT NOT NULL, state TEXT NOT NULL DEFAULT 'active'
 );
+CREATE TABLE IF NOT EXISTS sites (
+    id TEXT PRIMARY KEY, name TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS tenures (
+    id TEXT PRIMARY KEY, site_id TEXT NOT NULL REFERENCES sites(id),
+    operator TEXT NOT NULL, began_at TEXT NOT NULL, ended_at TEXT,
+    note TEXT NOT NULL DEFAULT ''
+);
+CREATE TABLE IF NOT EXISTS handovers (
+    id TEXT PRIMARY KEY, site_id TEXT NOT NULL REFERENCES sites(id),
+    predecessor TEXT NOT NULL, successor TEXT NOT NULL,
+    occurred_at TEXT NOT NULL, receipt TEXT NOT NULL, note TEXT NOT NULL DEFAULT ''
+);
 CREATE TABLE IF NOT EXISTS grants (
     id TEXT PRIMARY KEY, source_id TEXT NOT NULL REFERENCES sources(id),
     recipient TEXT NOT NULL, purpose TEXT NOT NULL, valid_until TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'active'
+    status TEXT NOT NULL DEFAULT 'active', revoked_at TEXT
+);
+CREATE TABLE IF NOT EXISTS grant_scopes (
+    grant_id TEXT NOT NULL REFERENCES grants(id),
+    asset_id TEXT NOT NULL REFERENCES assets(id),
+    PRIMARY KEY(grant_id,asset_id)
 );
 CREATE TABLE IF NOT EXISTS policies (
     jurisdiction TEXT NOT NULL, classification TEXT NOT NULL, purpose TEXT NOT NULL,
@@ -31,6 +50,7 @@ CREATE TABLE IF NOT EXISTS policies (
 CREATE TABLE IF NOT EXISTS products (
     id TEXT NOT NULL, revision INTEGER NOT NULL, name TEXT NOT NULL,
     state TEXT NOT NULL DEFAULT 'draft', created_at TEXT NOT NULL,
+    site_id TEXT REFERENCES sites(id),
     PRIMARY KEY(id,revision)
 );
 CREATE TABLE IF NOT EXISTS product_inputs (
@@ -43,6 +63,7 @@ CREATE TABLE IF NOT EXISTS deliveries (
     id TEXT PRIMARY KEY, product_id TEXT NOT NULL, product_revision INTEGER NOT NULL,
     recipient TEXT NOT NULL, purpose TEXT NOT NULL, created_at TEXT NOT NULL,
     input_digest TEXT NOT NULL, policy_revisions TEXT NOT NULL,
+    operator_at_delivery TEXT NOT NULL DEFAULT '', grant_evidence TEXT NOT NULL DEFAULT '[]',
     FOREIGN KEY(product_id,product_revision) REFERENCES products(id,revision)
 );
 CREATE TABLE IF NOT EXISTS audit (

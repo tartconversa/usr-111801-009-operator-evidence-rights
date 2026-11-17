@@ -1,10 +1,13 @@
 from .audit import history
+from .availability import Availability
 from .catalog import Catalog
 from .db import connect
 from .delivery import Delivery
 from .grants import Grants
+from .handovers import Handovers
 from .policy import Policies
 from .products import Products
+from .tenure import Tenures
 
 
 class Exchange:
@@ -15,6 +18,9 @@ class Exchange:
         self.policies = Policies(self.connection)
         self.products = Products(self.connection)
         self.delivery = Delivery(self.connection)
+        self.tenures = Tenures(self.connection)
+        self.handovers = Handovers(self.connection)
+        self.availability = Availability(self.connection)
 
     def history(self, subject):
         return history(self.connection, subject)
